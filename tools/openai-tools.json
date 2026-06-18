@@ -1,0 +1,120 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "add_rule",
+      "description": "Add a rule node to the rulegraph rule graph. Use this to load a game rule from a rulebook into the graph so it can be queried and arbitrated.",
+      "strict": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "rule_id": {
+            "type": "string",
+            "description": "Unique identifier for this rule, e.g. 'PHB.attack_roll' or 'PF2.action.strike'."
+          },
+          "text": {
+            "type": "string",
+            "description": "Full text of the rule as it appears in the rulebook."
+          },
+          "node_type": {
+            "type": "string",
+            "description": "Semantic type: 'mechanic' for deterministic rules, 'narrative' for flavor/interpretation, 'formula' for numeric calculations.",
+            "enum": ["mechanic", "narrative", "formula", "table", "definition", "optional"]
+          },
+          "tags": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Free-form tags for filtering, e.g. ['combat', 'attack', 'dice']."
+          },
+          "source": {
+            "type": "string",
+            "description": "Source book or document, e.g. 'D&D SRD 5.1' or 'Pathfinder 2e CRB'."
+          },
+          "db": {
+            "type": "string",
+            "description": "Path to the rulegraph SQLite database file.",
+            "default": ".rulegraph/rules.db"
+          }
+        },
+        "required": ["rule_id", "text"],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "query_rules",
+      "description": "Arbitrate a natural-language question against the rulegraph rule graph. Returns a structured ArbitrationResult with the answer, tier (determinate/indeterminate/unknown), confidence, provenance (which rules were used), and any contradictions detected.",
+      "strict": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "Natural-language question about game rules, e.g. 'How do I make an attack roll?' or 'What is difficult terrain?'"
+          },
+          "db": {
+            "type": "string",
+            "description": "Path to the rulegraph SQLite database file.",
+            "default": ".rulegraph/rules.db"
+          }
+        },
+        "required": ["question"],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "arbitrate",
+      "description": "Same as query_rules but also saves the result to the database for later audit. Returns the full ArbitrationResult including tier classification, provenance chain, confidence score, and any rule contradictions.",
+      "strict": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "Natural-language game-rules question to arbitrate."
+          },
+          "db": {
+            "type": "string",
+            "description": "Path to the rulegraph SQLite database file.",
+            "default": ".rulegraph/rules.db"
+          }
+        },
+        "required": ["question"],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "list_rules",
+      "description": "List all rules in the rulegraph rule graph, optionally filtered by tag or node type. Useful for browsing what rules are loaded.",
+      "strict": true,
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "tag": {
+            "type": "string",
+            "description": "Filter rules by this tag (e.g. 'combat', 'movement')."
+          },
+          "node_type": {
+            "type": "string",
+            "description": "Filter rules by this node type (e.g. 'mechanic', 'narrative')."
+          },
+          "db": {
+            "type": "string",
+            "description": "Path to the rulegraph SQLite database file.",
+            "default": ".rulegraph/rules.db"
+          }
+        },
+        "required": [],
+        "additionalProperties": false
+      }
+    }
+  }
+]

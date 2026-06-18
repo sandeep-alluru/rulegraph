@@ -1,0 +1,36 @@
+name: rulegraph
+description: "Natural-language rulebook compiler for game arbitration"
+inputs:
+  db:
+    description: "Path to the rulegraph database"
+    required: false
+    default: ".rulegraph/rules.db"
+  question:
+    description: "Natural-language question to arbitrate (optional)"
+    required: false
+    default: ""
+  fail-on-unknown:
+    description: "Fail if the arbitration tier is 'unknown' (no rules matched)"
+    required: false
+    default: "false"
+runs:
+  using: "composite"
+  steps:
+    - name: Install rulegraph
+      shell: bash
+      run: pip install -e "${{ github.action_path }}"
+    - name: Show rule graph status
+      shell: bash
+      run: rulegraph --db "${{ inputs.db }}" status
+    - name: Arbitrate question
+      if: inputs.question != ''
+      shell: bash
+      run: |
+        RESULT=$(rulegraph --db "${{ inputs.db }}" query "${{ inputs.question }}" --format json --no-save)
+        echo "$RESULT"
+        TIER=$(echo "$RESULT" | python3 -c "import sys,json; print(json.load(sys.stdin)['result']['tier'])")
+        echo "tier=$TIER" >> $GITHUB_OUTPUT
+        if [ "${{ inputs.fail-on-unknown }}" = "true" ] && [ "$TIER" = "unknown" ]; then
+          echo "No matching rules found for: ${{ inputs.question }}"
+          exit 1
+        fi
