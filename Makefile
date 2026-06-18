@@ -21,7 +21,7 @@ fmt:
 	ruff check --fix src/ tests/
 
 typecheck:
-	mypy src/lexgm/
+	mypy src/rulegraph/
 
 docs:
 	mkdocs serve

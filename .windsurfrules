@@ -1,11 +1,11 @@
-# lexgm — Windsurf Rules
+# rulegraph — Windsurf Rules
 
 ## Project overview
 Natural-language rulebook compiler for game arbitration
 
 ## Module map
 ```
-src/lexgm/
+src/rulegraph/
 ├── # TODO: fill in after implementation
 ```
 
