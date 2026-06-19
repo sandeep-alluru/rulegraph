@@ -1,0 +1,19 @@
+name: rulegraph
+displayName: "Rulegraph"
+description: "Natural-language rulebook compiler — parse game rules into executable logic graphs"
+license: MIT
+homepage: https://github.com/sandeep-alluru/rulegraph
+repository: https://github.com/sandeep-alluru/rulegraph
+keywords:
+  - ai-agents
+  - game-ai
+  - nlp
+  - rules-engine
+  - mcp
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties: {}
+  commandFunction: |-
+    (config) => ({ command: "python", args: ["-m", "rulegraph.mcp_server"] })
