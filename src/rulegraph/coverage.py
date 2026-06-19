@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 from rulegraph.rule import ArbitrationResult, RuleArbiter, RuleGraph
 
@@ -13,10 +14,10 @@ class RuleCoverage:
     rules_queried: int
     rules_never_queried: int
     coverage_pct: float
-    most_used_rules: list[tuple[str, int]]   # (rule_id, query_count)
+    most_used_rules: list[tuple[str, int]]  # (rule_id, query_count)
     dead_rules: list[str]
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "total_rules": self.total_rules,
             "rules_queried": self.rules_queried,

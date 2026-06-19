@@ -99,9 +99,8 @@ def infer_edges(rules: list[RuleNode]) -> list[RuleEdge]:
                 if target_rule.rule_id == source_rule.rule_id:
                     continue
                 # Check if target rule_id or any tag is mentioned in source text
-                mentioned = (
-                    target_rule.rule_id.lower() in text_lower
-                    or any(tag.lower() in text_lower for tag in target_rule.tags)
+                mentioned = target_rule.rule_id.lower() in text_lower or any(
+                    tag.lower() in text_lower for tag in target_rule.tags
                 )
                 if mentioned:
                     edge = RuleEdge(
