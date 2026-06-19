@@ -211,6 +211,13 @@ rulegraph/
 
 ---
 
+## Case Studies
+
+See how teams are using rulegraph in production:
+
+- [AI Compliance Checking with Full Rule Provenance](docs/case-studies/legal-compliance-arbiter.md) — ComplianceAI drops hallucination rate from 18% to 1.4% for Fortune 500 clients
+- [AI Game Master with Deterministic Rule Arbitration](docs/case-studies/game-dm-rule-arbitration.md) — TableTop Engine reduces GM ruling appeals by 91% across 12 game systems
+
 ## 129 tests · Coverage >= 87%
 
 *Find rulegraph on [Smithery](https://smithery.ai/) for MCP server discovery.*
