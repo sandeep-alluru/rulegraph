@@ -29,7 +29,18 @@ Most rule-lookup tools treat all rules the same. rulegraph doesn't. It classifie
 rulegraph add-rule PHB.attack "When you make an attack roll..." --type mechanic --tag combat
 rulegraph add-edge UA.flanking PHB.attack modifies
 rulegraph query "How do I make an attack roll?"
-# => tier: determinate | confidence: 95% | provenance: [PHB.attack, UA.flanking]
+```
+
+```
+╭──────────────────────────────────────╮
+│ Query: How do I make an attack roll? │
+│ Tier: determinate  Confidence: 100%  │
+╰──────────────────────────────────────╯
+Determinate ruling based on 2 rule(s):
+  [PHB.attack] When you make an attack roll, roll d20 + modifier. If result >= AC, attack hits.
+  [UA.flanking] When flanking, attacker gains advantage on melee attacks against the flanked enemy.
+
+Provenance (2): PHB.attack, UA.flanking
 ```
 
 ---
@@ -52,9 +63,10 @@ flowchart LR
 - **RuleNode** — a single rule, content-addressed by `rule_id`. Carries `node_type`, `tags`, `source`, and `confidence`.
 - **RuleEdge** — a directed relationship between rules: `modifies`, `supersedes`, `requires`, `exception-to`.
 - **RuleGraph** — an in-memory graph of nodes and edges with tag/type/text search.
-- **RuleArbiter** — keyword-based query engine that classifies, detects contradictions, and returns provenance.
+- **RuleArbiter** — keyword-based query engine that classifies, detects contradictions, and returns provenance. Call `arbiter.query(question)` for a single arbitration.
 - **ArbitrationResult** — structured answer: `tier` (determinate/indeterminate/unknown), `confidence`, `provenance`, `contradictions`.
 - **RuleStore** — SQLite-backed persistence for nodes, edges, and results.
+- **CoverageTracker** — wraps a `RuleArbiter` to record which rules are invoked across many queries. Use `tracker.arbitrate(question)` instead of `arbiter.query()`, then call `tracker.report()` to see which rules were never triggered (`dead_rules`) and which were most used. `RuleArbiter.query()` is for production arbitration; `CoverageTracker` is for testing, auditing, and game-system simplification.
 
 ---
 
@@ -81,6 +93,17 @@ pip install rulegraph
 # or with API server:
 pip install "rulegraph[api]"
 ```
+
+> **Note:** PyPI publication pending. Install directly from source in the meantime:
+> ```bash
+> pip install git+https://github.com/sandeep-alluru/rulegraph.git
+> ```
+
+> **Debian/Ubuntu users:** If you see `No module named venv`, install the venv package first:
+> ```bash
+> sudo apt-get install python3-venv
+> python3 -m venv .venv && source .venv/bin/activate
+> ```
 
 ```bash
 # Add rules
