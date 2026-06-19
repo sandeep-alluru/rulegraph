@@ -19,33 +19,31 @@ import json
 import sys
 from typing import Any
 
+try:
+    import mcp.server.stdio as _mcp_stdio
+    import mcp.types as _mcp_types
+    from mcp.server import Server as _Server
+    _HAS_MCP = True
+except ImportError:
+    _HAS_MCP = False
 
-def _require_mcp() -> Any:
-    try:
-        import mcp.server.stdio
-        import mcp.types as types
-        from mcp.server import Server
 
-        return mcp, types, Server
-    except ImportError:
+def run_server() -> None:
+    """Start the MCP server on stdio."""
+    if not _HAS_MCP:
         print(
             "MCP server requires: pip install 'rulegraph[mcp]'",
             file=sys.stderr,
         )
         sys.exit(1)
 
-
-def run_server() -> None:
-    """Start the MCP server on stdio."""
-    mcp_mod, types, server_cls = _require_mcp()
-
-    server = server_cls("rulegraph")
+    server = _Server("rulegraph")
 
     @server.list_tools()
-    async def list_tools() -> list[types.Tool]:
+    async def list_tools() -> list[_mcp_types.Tool]:
         """Expose rulegraph tools to MCP clients."""
         return [
-            types.Tool(
+            _mcp_types.Tool(
                 name="add_rule",
                 description="Add a rule node to the rulegraph rule graph.",
                 inputSchema={
@@ -69,7 +67,7 @@ def run_server() -> None:
                     "required": ["rule_id", "text"],
                 },
             ),
-            types.Tool(
+            _mcp_types.Tool(
                 name="query_rules",
                 description="Arbitrate a natural-language question against the rule graph.",
                 inputSchema={
@@ -81,7 +79,7 @@ def run_server() -> None:
                     "required": ["question"],
                 },
             ),
-            types.Tool(
+            _mcp_types.Tool(
                 name="arbitrate",
                 description="Return a structured ArbitrationResult for a game-rules question.",
                 inputSchema={
@@ -96,7 +94,7 @@ def run_server() -> None:
         ]
 
     @server.call_tool()
-    async def call_tool(name: str, arguments: dict[str, Any]) -> list[types.TextContent]:
+    async def call_tool(name: str, arguments: dict[str, Any]) -> list[_mcp_types.TextContent]:
         """Dispatch an MCP tool call."""
         from rulegraph.rule import RuleArbiter, RuleNode, RuleStore
 
@@ -113,7 +111,7 @@ def run_server() -> None:
                     source=arguments.get("source", ""),
                 )
                 store.save_node(node)
-                return [types.TextContent(type="text", text=json.dumps(node.to_dict()))]
+                return [_mcp_types.TextContent(type="text", text=json.dumps(node.to_dict()))]
             finally:
                 store.close()
 
@@ -124,7 +122,7 @@ def run_server() -> None:
                 arbiter = RuleArbiter(graph)
                 result = arbiter.query(arguments["question"])
                 store.save_result(result)
-                return [types.TextContent(type="text", text=json.dumps(result.to_dict()))]
+                return [_mcp_types.TextContent(type="text", text=json.dumps(result.to_dict()))]
             finally:
                 store.close()
 
@@ -133,7 +131,7 @@ def run_server() -> None:
     import asyncio
 
     async def _main() -> None:
-        async with mcp_mod.server.stdio.stdio_server() as (read_stream, write_stream):
+        async with _mcp_stdio.stdio_server() as (read_stream, write_stream):
             await server.run(read_stream, write_stream, server.create_initialization_options())
 
     asyncio.run(_main())

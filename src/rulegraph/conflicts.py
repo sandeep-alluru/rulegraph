@@ -54,7 +54,7 @@ def detect_conflicts(graph: RuleGraph) -> list[RuleConflict]:
         if edge.relation in ("supersedes", "exception-to"):
             supersedes_map.setdefault(edge.source_id, set()).add(edge.target_id)
 
-    rule_ids = list(graph._nodes.keys())
+    rule_ids = graph.node_ids()
     for i, a in enumerate(rule_ids):
         for b in rule_ids[i + 1:]:
             a_supersedes_b = b in supersedes_map.get(a, set())
@@ -69,7 +69,7 @@ def detect_conflicts(graph: RuleGraph) -> list[RuleConflict]:
                 ))
 
     # 3. Overlapping scope — same tags + different node_type
-    nodes = list(graph._nodes.values())
+    nodes = graph.nodes()
     for i, a_node in enumerate(nodes):
         for b_node in nodes[i + 1:]:
             if a_node.node_type != b_node.node_type:
@@ -93,7 +93,7 @@ def detect_conflicts(graph: RuleGraph) -> list[RuleConflict]:
 def find_cycles(graph: RuleGraph) -> list[list[str]]:
     """Find circular dependencies in the rule graph using DFS."""
     # Build adjacency: only 'requires' edges form dependencies
-    adj: dict[str, list[str]] = {rid: [] for rid in graph._nodes}
+    adj: dict[str, list[str]] = {rid: [] for rid in graph.node_ids()}
     for edge in graph.get_edges():
         if edge.relation == "requires":
             adj.setdefault(edge.source_id, []).append(edge.target_id)
@@ -116,7 +116,7 @@ def find_cycles(graph: RuleGraph) -> list[list[str]]:
         path.pop()
         rec_stack.discard(node)
 
-    for rule_id in graph._nodes:
+    for rule_id in graph.node_ids():
         if rule_id not in visited:
             dfs(rule_id, [])
 

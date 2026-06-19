@@ -98,7 +98,7 @@ class RuleEdge:
     id: str = field(init=False)
 
     def __post_init__(self) -> None:
-        self.id = _sha16(f"{self.source_id}|{self.target_id}|{self.relation}")
+        self.id = _sha16(f"{self.source_id}|{self.target_id}|{self.relation}|{self.condition}")
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to a JSON-compatible dict."""
@@ -246,6 +246,14 @@ class RuleGraph:
             lower = text_contains.lower()
             result = [n for n in result if lower in n.text.lower()]
         return result
+
+    def node_ids(self) -> list[str]:
+        """Return a list of all rule_ids in the graph."""
+        return list(self._nodes.keys())
+
+    def nodes(self) -> list[RuleNode]:
+        """Return a list of all RuleNode objects in the graph."""
+        return list(self._nodes.values())
 
     def node_count(self) -> int:
         """Return the number of nodes in the graph."""
