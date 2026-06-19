@@ -45,7 +45,10 @@ def detect_conflicts(graph: RuleGraph) -> list[RuleConflict]:
                         rule_a_id=a,
                         rule_b_id=b,
                         conflict_type="circular_dependency",
-                        description=f"Circular dependency detected: {' -> '.join([*cycle, cycle[0]])}",
+                        description=(
+                            "Circular dependency detected: "
+                            + " -> ".join([*cycle, cycle[0]])
+                        ),
                         severity="critical",
                     )
                 )
