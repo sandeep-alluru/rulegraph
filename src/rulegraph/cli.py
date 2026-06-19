@@ -207,5 +207,78 @@ def status(ctx: click.Context) -> None:
         store.close()
 
 
+@main.command("conflicts")
+@click.pass_context
+def conflicts_cmd(ctx: click.Context) -> None:
+    """Detect rule conflicts and circular dependencies.
+
+    \b
+    Examples:
+      rulegraph conflicts
+      rulegraph --db myrules.db conflicts
+    """
+    from rulegraph.conflicts import detect_conflicts
+
+    store = _store(ctx)
+    try:
+        graph = store.load_graph()
+        conflicts = detect_conflicts(graph)
+        if not conflicts:
+            click.echo("No conflicts detected.")
+            return
+        click.echo(f"Found {len(conflicts)} conflict(s):")
+        for c in conflicts:
+            click.echo(f"  [{c.severity.upper()}] {c.conflict_type}")
+            click.echo(f"    {c.rule_a_id} <-> {c.rule_b_id}")
+            click.echo(f"    {c.description}")
+    finally:
+        store.close()
+
+
+@main.command("coverage")
+@click.argument("queries", nargs=-1)
+@click.pass_context
+def coverage_cmd(ctx: click.Context, queries: tuple[str, ...]) -> None:
+    """Show rule coverage — which rules are queried vs dead.
+
+    Optionally pass queries to test coverage against.
+
+    \b
+    Examples:
+      rulegraph coverage
+      rulegraph coverage "How do I attack?" "What is difficult terrain?"
+    """
+    from rulegraph.coverage import CoverageTracker
+
+    store = _store(ctx)
+    try:
+        graph = store.load_graph()
+        arbiter = RuleArbiter(graph)
+        tracker = CoverageTracker(arbiter)
+
+        if queries:
+            for q in queries:
+                tracker.arbitrate(q)
+        else:
+            # Use all stored results to measure historical coverage
+            for result in store.list_results():
+                for rule_id in result.provenance:
+                    tracker._query_counts[rule_id] = tracker._query_counts.get(rule_id, 0) + 1
+
+        report = tracker.report()
+        click.echo(f"Total rules:    {report.total_rules}")
+        click.echo(f"Rules queried:  {report.rules_queried}")
+        click.echo(f"Never queried:  {report.rules_never_queried}")
+        click.echo(f"Coverage:       {report.coverage_pct:.1f}%")
+        if report.most_used_rules:
+            click.echo("Most used:")
+            for rule_id, count in report.most_used_rules[:5]:
+                click.echo(f"  {rule_id}: {count} query/queries")
+        if report.dead_rules:
+            click.echo(f"Dead rules ({len(report.dead_rules)}): {', '.join(report.dead_rules[:5])}")
+    finally:
+        store.close()
+
+
 if __name__ == "__main__":
     main()

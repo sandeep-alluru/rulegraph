@@ -177,3 +177,72 @@ def test_rules_help(runner: CliRunner) -> None:
 def test_status_help(runner: CliRunner) -> None:
     result = runner.invoke(main, ["status", "--help"])
     assert result.exit_code == 0
+
+
+# ── conflicts command ─────────────────────────────────────────────────────────
+
+def test_conflicts_empty_db(runner: CliRunner, db_path: str) -> None:
+    result = runner.invoke(main, ["--db", db_path, "conflicts"])
+    assert result.exit_code == 0
+    assert "No conflicts detected" in result.output
+
+
+def test_conflicts_detects_circular(runner: CliRunner, db_path: str) -> None:
+    runner.invoke(main, ["--db", db_path, "add-rule", "rule.a", "Rule A text"])
+    runner.invoke(main, ["--db", db_path, "add-rule", "rule.b", "Rule B text"])
+    runner.invoke(main, ["--db", db_path, "add-edge", "rule.a", "rule.b", "requires"])
+    runner.invoke(main, ["--db", db_path, "add-edge", "rule.b", "rule.a", "requires"])
+    result = runner.invoke(main, ["--db", db_path, "conflicts"])
+    assert result.exit_code == 0
+    assert "circular_dependency" in result.output
+
+
+def test_conflicts_detects_contradiction(runner: CliRunner, db_path: str) -> None:
+    runner.invoke(main, ["--db", db_path, "add-rule", "rule.a", "Rule A text"])
+    runner.invoke(main, ["--db", db_path, "add-rule", "rule.b", "Rule B text"])
+    runner.invoke(main, ["--db", db_path, "add-edge", "rule.a", "rule.b", "supersedes"])
+    runner.invoke(main, ["--db", db_path, "add-edge", "rule.b", "rule.a", "supersedes"])
+    result = runner.invoke(main, ["--db", db_path, "conflicts"])
+    assert result.exit_code == 0
+    assert "direct_contradiction" in result.output
+
+
+def test_conflicts_help(runner: CliRunner) -> None:
+    result = runner.invoke(main, ["conflicts", "--help"])
+    assert result.exit_code == 0
+
+
+# ── coverage command ──────────────────────────────────────────────────────────
+
+def test_coverage_empty_db(runner: CliRunner, db_path: str) -> None:
+    result = runner.invoke(main, ["--db", db_path, "coverage"])
+    assert result.exit_code == 0
+    assert "Total rules" in result.output
+    assert "0" in result.output
+
+
+def test_coverage_with_rules(runner: CliRunner, db_path: str) -> None:
+    runner.invoke(main, ["--db", db_path, "add-rule", "attack", "Roll d20 to attack", "--tag", "combat"])
+    result = runner.invoke(main, ["--db", db_path, "coverage"])
+    assert result.exit_code == 0
+    assert "Total rules" in result.output
+    assert "1" in result.output
+
+
+def test_coverage_with_query_args(runner: CliRunner, db_path: str) -> None:
+    runner.invoke(main, ["--db", db_path, "add-rule", "attack", "Roll d20 to attack", "--tag", "combat"])
+    result = runner.invoke(main, ["--db", db_path, "coverage", "attack roll"])
+    assert result.exit_code == 0
+    assert "Coverage" in result.output
+
+
+def test_coverage_shows_dead_rules(runner: CliRunner, db_path: str) -> None:
+    runner.invoke(main, ["--db", db_path, "add-rule", "rule.unused", "Unused rule text"])
+    result = runner.invoke(main, ["--db", db_path, "coverage"])
+    assert result.exit_code == 0
+    assert "Dead rules" in result.output
+
+
+def test_coverage_help(runner: CliRunner) -> None:
+    result = runner.invoke(main, ["coverage", "--help"])
+    assert result.exit_code == 0
