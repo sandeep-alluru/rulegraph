@@ -327,6 +327,12 @@ Contradictions: ['PHB.rogue.uncanny_dodge']
 
 #llm #agents #gaming #game-master #rulebook #arbitration #mcp #llmops #nlp
 
+---
+
+## Stay Updated
+
+Subscribe to [**The Silence Layer**](https://newsletter.salluru.dev) — weekly dispatches on production AI infrastructure, new releases, and the failure modes that production AI systems don't surface until it's too late.
+
 ## Star History
 
 [![Star History Chart](https://api.star-history.com/svg?repos=sandeep-alluru/rulegraph&type=Date)](https://star-history.com/#sandeep-alluru/rulegraph&Date)
