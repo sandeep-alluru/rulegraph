@@ -224,6 +224,105 @@ rulegraph/
 
 ---
 
+## Real-World Scenario
+
+**D&D 5e: AI Game Master Detecting Errata Conflict Before Ruling**
+
+A player asks if their rogue can use Uncanny Dodge against an invisible attacker. The PHB says yes. A 2024 errata says no. Rather than silently applying the wrong rule, the AI GM detects the contradiction and escalates to human adjudication:
+
+```python
+from rulegraph.rule import RuleNode, RuleEdge, RuleGraph, RuleArbiter, ArbitrationResult
+
+# 1. Create the rule graph
+graph = RuleGraph()
+
+# 2. Add the two conflicting rule nodes
+phb_node = RuleNode(
+    rule_id="PHB.rogue.uncanny_dodge",
+    text=(
+        "A rogue with Uncanny Dodge can use their reaction to halve the damage "
+        "from an attack they can see."
+    ),
+    node_type="interpretation",
+    tags=["rogue", "uncanny-dodge", "reaction", "combat"],
+    source="Player's Handbook",
+    confidence=1.0,
+)
+
+errata_node = RuleNode(
+    rule_id="Errata.2024.uncanny_dodge",
+    text="Uncanny Dodge does not apply against attacks from invisible creatures.",
+    node_type="interpretation",
+    tags=["rogue", "uncanny-dodge", "errata", "invisible"],
+    source="D&D 2024 Errata",
+    confidence=1.0,
+)
+
+graph.add_node(phb_node)
+graph.add_node(errata_node)
+
+# 3. Add a supersedes edge: newer errata supersedes the PHB base text
+supersedes_edge = RuleEdge(
+    source_id="Errata.2024.uncanny_dodge",
+    target_id="PHB.rogue.uncanny_dodge",
+    relation="supersedes",
+    condition="when attacker is invisible",
+)
+graph.add_edge(supersedes_edge)
+
+# 4. Create the arbiter
+arbiter = RuleArbiter(graph)
+
+# 5. Query: player asks about invisible attacker
+question = "Can a rogue use Uncanny Dodge against an invisible attacker?"
+result: ArbitrationResult = arbiter.query(question)
+
+# 6. Check for contradiction and indeterminate tier
+assert result.tier == "indeterminate", f"Expected indeterminate, got {result.tier!r}"
+assert len(result.contradictions) > 0, "Expected at least one contradiction"
+
+# 7. Print the ruling and the contradicting rules
+print(f"Query   : {result.query}")
+print(f"Tier    : {result.tier}")
+print(f"Confidence: {result.confidence:.0%}")
+print()
+print("Ruling:")
+print(result.answer)
+print()
+print(f"Provenance  : {result.provenance}")
+print(f"Contradictions: {result.contradictions}")
+print()
+print("--- Contradicting rule texts ---")
+for rule_id in result.contradictions:
+    node = graph.get_node(rule_id)
+    if node:
+        print(f"  [{node.rule_id}] {node.text}")
+```
+
+Running this prints:
+
+```
+Query   : Can a rogue use Uncanny Dodge against an invisible attacker?
+Tier    : indeterminate
+Confidence: 85%
+
+Ruling:
+Indeterminate ruling — requires GM interpretation (2 rule(s) found):
+  [Errata.2024.uncanny_dodge] Uncanny Dodge does not apply against attacks from invisible creatures.
+  [PHB.rogue.uncanny_dodge] A rogue with Uncanny Dodge can use their reaction to halve the damage from an attack the…
+WARNING: 1 contradiction(s) detected: PHB.rogue.uncanny_dodge
+
+Provenance  : ['Errata.2024.uncanny_dodge', 'PHB.rogue.uncanny_dodge']
+Contradictions: ['PHB.rogue.uncanny_dodge']
+
+--- Contradicting rule texts ---
+  [PHB.rogue.uncanny_dodge] A rogue with Uncanny Dodge can use their reaction to halve the damage from an attack they can see.
+```
+
+**What this prevents:** LLM-based game masters hallucinate rulings or pick arbitrarily between conflicting sources. rulegraph gives every ruling full provenance — which rules were consulted, which supersede which, and whether the answer is determinate or requires human judgment.
+
+---
+
 ## Topics
 
 #llm #agents #gaming #game-master #rulebook #arbitration #mcp #llmops #nlp
