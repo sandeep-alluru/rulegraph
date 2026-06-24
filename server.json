@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.sandeep-alluru/rulegraph",
+  "title": "RuleGraph",
+  "description": "Natural-language rulebook compiler for game arbitration",
+  "version": "0.1.1",
+  "websiteUrl": "https://github.com/sandeep-alluru/rulegraph",
+  "repository": {
+    "url": "https://github.com/sandeep-alluru/rulegraph",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "rulegraph",
+      "version": "0.1.1",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
