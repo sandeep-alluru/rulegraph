@@ -1,19 +1,20 @@
 """Tests for rulegraph.coverage module."""
-import pytest
 
-from rulegraph.coverage import CoverageTracker, RuleCoverage
+from rulegraph.coverage import CoverageTracker
 from rulegraph.rule import RuleArbiter, RuleGraph, RuleNode
 
 
 def _graph_with_rules(*rule_ids: str) -> RuleGraph:
     graph = RuleGraph()
     for rid in rule_ids:
-        graph.add_node(RuleNode(
-            rule_id=rid,
-            text=f"Rule text mentioning {rid}.",
-            node_type="mechanic",
-            tags=[rid.split(".")[-1]],
-        ))
+        graph.add_node(
+            RuleNode(
+                rule_id=rid,
+                text=f"Rule text mentioning {rid}.",
+                node_type="mechanic",
+                tags=[rid.split(".")[-1]],
+            )
+        )
     return graph
 
 
@@ -50,8 +51,19 @@ def test_coverage_with_query():
 
 def test_coverage_tracks_provenance():
     graph = RuleGraph()
-    graph.add_node(RuleNode(rule_id="attack", text="Attack roll: roll d20.", node_type="mechanic", tags=["attack"]))
-    graph.add_node(RuleNode(rule_id="defense", text="Armor class determines hits.", node_type="mechanic", tags=["defense"]))
+    graph.add_node(
+        RuleNode(
+            rule_id="attack", text="Attack roll: roll d20.", node_type="mechanic", tags=["attack"]
+        )
+    )
+    graph.add_node(
+        RuleNode(
+            rule_id="defense",
+            text="Armor class determines hits.",
+            node_type="mechanic",
+            tags=["defense"],
+        )
+    )
     arbiter = RuleArbiter(graph)
     tracker = CoverageTracker(arbiter)
     result = tracker.arbitrate("attack")
@@ -85,7 +97,9 @@ def test_coverage_to_dict():
 
 def test_coverage_most_used_sorted():
     graph = RuleGraph()
-    graph.add_node(RuleNode(rule_id="attack", text="attack roll", node_type="mechanic", tags=["attack"]))
+    graph.add_node(
+        RuleNode(rule_id="attack", text="attack roll", node_type="mechanic", tags=["attack"])
+    )
     arbiter = RuleArbiter(graph)
     tracker = CoverageTracker(arbiter)
     # Simulate multiple queries

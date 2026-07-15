@@ -1,12 +1,13 @@
 """Tests for rulegraph.conflicts module."""
-import pytest
 
 from rulegraph.conflicts import RuleConflict, detect_conflicts, find_cycles
 from rulegraph.rule import RuleEdge, RuleGraph, RuleNode
 
 
 def _node(rule_id: str, tags: list[str] | None = None, node_type: str = "mechanic") -> RuleNode:
-    return RuleNode(rule_id=rule_id, text=f"Rule text for {rule_id}.", node_type=node_type, tags=tags or [])
+    return RuleNode(
+        rule_id=rule_id, text=f"Rule text for {rule_id}.", node_type=node_type, tags=tags or []
+    )
 
 
 def test_detect_conflicts_empty_graph():

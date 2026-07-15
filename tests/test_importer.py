@@ -1,11 +1,9 @@
 """Tests for rulegraph.importer module."""
-from pathlib import Path
 
-import pytest
+from pathlib import Path
 
 from rulegraph.importer import import_from_file, import_from_text, infer_edges
 from rulegraph.rule import RuleNode
-
 
 SAMPLE_TEXT = """
 - Attack rolls [combat] [attack]: When you make an attack, roll 1d20.
@@ -88,7 +86,9 @@ def test_infer_edges_no_keywords():
 
 def test_infer_edges_detects_requires():
     nodes = [
-        RuleNode(rule_id="rule.a", text="This rule requires rule.b to apply.", node_type="mechanic"),
+        RuleNode(
+            rule_id="rule.a", text="This rule requires rule.b to apply.", node_type="mechanic"
+        ),
         RuleNode(rule_id="rule.b", text="Base rule.", node_type="mechanic"),
     ]
     edges = infer_edges(nodes)
@@ -97,7 +97,9 @@ def test_infer_edges_detects_requires():
 
 def test_infer_edges_detects_supersedes():
     nodes = [
-        RuleNode(rule_id="rule.a", text="This supersedes rule.b in all cases.", node_type="mechanic"),
+        RuleNode(
+            rule_id="rule.a", text="This supersedes rule.b in all cases.", node_type="mechanic"
+        ),
         RuleNode(rule_id="rule.b", text="Old rule.", node_type="mechanic"),
     ]
     edges = infer_edges(nodes)

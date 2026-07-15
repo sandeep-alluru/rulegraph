@@ -181,6 +181,7 @@ def test_status_help(runner: CliRunner) -> None:
 
 # ── conflicts command ─────────────────────────────────────────────────────────
 
+
 def test_conflicts_empty_db(runner: CliRunner, db_path: str) -> None:
     result = runner.invoke(main, ["--db", db_path, "conflicts"])
     assert result.exit_code == 0
@@ -214,6 +215,7 @@ def test_conflicts_help(runner: CliRunner) -> None:
 
 # ── coverage command ──────────────────────────────────────────────────────────
 
+
 def test_coverage_empty_db(runner: CliRunner, db_path: str) -> None:
     result = runner.invoke(main, ["--db", db_path, "coverage"])
     assert result.exit_code == 0
@@ -222,7 +224,9 @@ def test_coverage_empty_db(runner: CliRunner, db_path: str) -> None:
 
 
 def test_coverage_with_rules(runner: CliRunner, db_path: str) -> None:
-    runner.invoke(main, ["--db", db_path, "add-rule", "attack", "Roll d20 to attack", "--tag", "combat"])
+    runner.invoke(
+        main, ["--db", db_path, "add-rule", "attack", "Roll d20 to attack", "--tag", "combat"]
+    )
     result = runner.invoke(main, ["--db", db_path, "coverage"])
     assert result.exit_code == 0
     assert "Total rules" in result.output
@@ -230,7 +234,9 @@ def test_coverage_with_rules(runner: CliRunner, db_path: str) -> None:
 
 
 def test_coverage_with_query_args(runner: CliRunner, db_path: str) -> None:
-    runner.invoke(main, ["--db", db_path, "add-rule", "attack", "Roll d20 to attack", "--tag", "combat"])
+    runner.invoke(
+        main, ["--db", db_path, "add-rule", "attack", "Roll d20 to attack", "--tag", "combat"]
+    )
     result = runner.invoke(main, ["--db", db_path, "coverage", "attack roll"])
     assert result.exit_code == 0
     assert "Coverage" in result.output
