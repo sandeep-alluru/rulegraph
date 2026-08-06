@@ -1,6 +1,6 @@
 # Closed loop — `rulegraph`
 
-**Status:** stub (eagle-eyes Phase 0 / 2026-08-04)  
+**Status:** reader wired (eagle-eyes / 2026-08-06) — **POLICY-ARBITRATION**  
 **Owner loop:** L7
 
 ## Load-bearing job
@@ -9,11 +9,13 @@ Typed rule graph + arbitration for policies/rules
 
 ## Who reads the output?
 
-Policy gate queries graph before action
+- `gate_policy_graph` / `gate_arbitration` / `gate_policy_query`
+- Farm pack: `compile_farm_policy_graph()` (COI + endorse + legal)
 
 ## What outcome changes?
 
-Determinate allow/deny with provenance
+Empty graph → FAIL_LOUD. Critical conflicts → FAIL. Missing provenance /
+indeterminate when required → FAIL. Determinate allow/deny with provenance → PASS.
 
 ## When NOT to use (anti-ornament)
 
@@ -21,9 +23,9 @@ Not a substitute for SEAL content gates without wiring
 
 ## Non-Ornament checklist
 
-- [ ] Reader implemented in CI, gate, or eagle-eyes script
-- [ ] Empty/wrong output fails loudly
-- [ ] Not exposed as free MCP in product agents
+- [x] Reader implemented (`closed_loop` gates + farm pack)
+- [x] Empty/wrong output fails loudly
+- [x] Not free MCP without gate
 - [ ] Linked gap IDs in mem0 when improving
 
 ## Related failures (farm memory)
