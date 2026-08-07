@@ -1,25 +1,31 @@
-"""Closed-loop policy gates for rulegraph (POLICY-ARBITRATION / Non-Ornament L7).
+"""Closed-loop policy gates for rulegraph (POLICY-ARBITRATION + LOGPROB-GATE).
 
 Who reads the output?
   Policy gates before endorse/COI-sensitive actions, CI, eagle-eyes dogfood.
+  Agent runtimes that must block brittle tool args before execution (AgentUQ).
 
 What outcome changes?
   Empty rule graphs → FAIL_LOUD. Critical conflicts → FAIL.
   Queries that need determinate policy and get unknown/indeterminate → FAIL.
   Farm COI/endorse pack compiles to a load-bearing graph (not a docs stub).
+  Missing / empty token logprobs on high-risk steps → FAIL_LOUD (AgentUQ).
+  Mean or min token logprob below threshold → FAIL (block / human_required).
 
 Farm case POLICY-ARBITRATION:
   COI / endorse rules must be *compiled* into the rule graph and arbitrated
   before action — a rulebook that is never queried is ornament.
 
-Public map: AgentUQ runtime gates, AgentWard post-deletion policies, MAFIA
-audit-path policy + HITL.
+Public map:
+  * AgentUQ (HN) — token-logprob runtime gate for LLM agent steps
+  * AgentWard (HN) — post-deletion policy enforcement
+  * MAFIA (arXiv) — policy + HITL on audit/tools
 """
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 from rulegraph.conflicts import RuleConflict, detect_conflicts
 from rulegraph.rule import (
@@ -30,6 +36,11 @@ from rulegraph.rule import (
     RuleNode,
 )
 
+# Default thresholds for AgentUQ-class logprob gates (natural logprobs).
+# Providers emit negative logprobs; less negative = more confident.
+DEFAULT_MIN_MEAN_LOGPROB: float = -1.5
+DEFAULT_MIN_TOKEN_LOGPROB: float = -4.0
+
 
 class ClosedLoopError(ValueError):
     """Raised when policy gate refuses empty/conflicted/indeterminate graphs."""
@@ -37,7 +48,7 @@ class ClosedLoopError(ValueError):
 
 @dataclass(frozen=True)
 class GateOutcome:
-    """Result of a closed-loop policy gate.
+    """Result of a closed-loop policy or logprob gate.
 
     Attributes:
         ok: True only when the pipeline may continue.
@@ -49,9 +60,14 @@ class GateOutcome:
         conflict_count: Conflicts detected.
         critical_conflict_count: Severity=critical conflicts.
         tier: Arbitration tier when a query was run.
-        confidence: Arbitration confidence when a query was run.
+        confidence: Arbitration confidence or geometric mean token prob.
         provenance: Rule ids used for the answer.
         human_required: True when policy needs human arbitration.
+        mean_logprob: Mean token logprob when a logprob gate ran.
+        min_logprob: Minimum token logprob when a logprob gate ran.
+        token_count: Number of tokens examined by a logprob gate.
+        action: Action / step name gated (logprob path).
+        brittle_spans: Span names that failed logprob thresholds.
     """
 
     ok: bool
@@ -66,6 +82,11 @@ class GateOutcome:
     confidence: float | None = None
     provenance: tuple[str, ...] = ()
     human_required: bool = False
+    mean_logprob: float | None = None
+    min_logprob: float | None = None
+    token_count: int = 0
+    action: str | None = None
+    brittle_spans: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -81,6 +102,30 @@ class GateOutcome:
             "confidence": self.confidence,
             "provenance": list(self.provenance),
             "human_required": self.human_required,
+            "mean_logprob": self.mean_logprob,
+            "min_logprob": self.min_logprob,
+            "token_count": self.token_count,
+            "action": self.action,
+            "brittle_spans": list(self.brittle_spans),
+        }
+
+
+@dataclass(frozen=True)
+class LogprobSummary:
+    """Aggregate stats over a sequence of token logprobs (AgentUQ class)."""
+
+    token_count: int
+    mean_logprob: float
+    min_logprob: float
+    # Geometric mean of token probabilities = exp(mean logprob).
+    confidence: float
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "token_count": self.token_count,
+            "mean_logprob": self.mean_logprob,
+            "min_logprob": self.min_logprob,
+            "confidence": self.confidence,
         }
 
 
@@ -422,3 +467,193 @@ def assert_arbitration_ok(result: ArbitrationResult, **kwargs: Any) -> GateOutco
 def list_critical_conflicts(graph: RuleGraph) -> list[RuleConflict]:
     """Return only critical conflicts (for CI reports)."""
     return [c for c in detect_conflicts(graph) if c.severity == "critical"]
+
+
+# ---------------------------------------------------------------------------
+# LOGPROB-GATE / AgentUQ — token-logprob runtime reliability gate
+# ---------------------------------------------------------------------------
+
+
+def summarize_logprobs(logprobs: Sequence[float]) -> LogprobSummary:
+    """Compute mean/min logprob and geometric-mean confidence from token logprobs.
+
+    Args:
+        logprobs: Per-token natural log-probabilities (typically ≤ 0).
+
+    Raises:
+        ValueError: if *logprobs* is empty.
+    """
+    if not logprobs:
+        raise ValueError("empty logprobs — cannot summarize")
+    vals = [float(x) for x in logprobs]
+    mean_lp = sum(vals) / len(vals)
+    min_lp = min(vals)
+    # Clamp exp for numerical safety on extremely negative logprobs.
+    conf = math.exp(max(mean_lp, -50.0))
+    return LogprobSummary(
+        token_count=len(vals),
+        mean_logprob=mean_lp,
+        min_logprob=min_lp,
+        confidence=conf,
+    )
+
+
+def gate_logprob(
+    logprobs: Sequence[float] | None,
+    *,
+    min_mean_logprob: float = DEFAULT_MIN_MEAN_LOGPROB,
+    min_token_logprob: float = DEFAULT_MIN_TOKEN_LOGPROB,
+    require_logprobs: bool = True,
+    high_risk: bool = False,
+    action: str | None = None,
+    spans: Mapping[str, Sequence[float]] | None = None,
+) -> GateOutcome:
+    """Block brittle LLM steps using token logprobs (AgentUQ / LOGPROB-GATE).
+
+    Public case: AgentUQ (HN Show HN) — single-pass runtime reliability gate
+    from provider logprobs. Does **not** claim truth; refuses execution when
+    the generation looks ambiguous/brittle, especially on high-risk tools
+    (SQL, shell, paths, tool JSON).
+
+    Rules:
+
+    * ``require_logprobs`` and empty/missing logprobs → **FAIL_LOUD**
+      (cannot gate a phantom confidence signal).
+    * mean logprob < ``min_mean_logprob`` → **FAIL** (``human_required`` if
+      high_risk).
+    * any token logprob < ``min_token_logprob`` → **FAIL**.
+    * optional ``spans``: each named span (e.g. ``sql_clause``, ``tool_args``)
+      is checked with the same thresholds; failing span names appear in
+      ``brittle_spans``.
+    * clean tokens → **PASS** with ``confidence = exp(mean_logprob)``.
+
+    Args:
+        logprobs: Full-step token logprobs (may be None if only spans given).
+        min_mean_logprob: Minimum allowed mean logprob (default -1.5).
+        min_token_logprob: Minimum allowed single-token logprob (default -4.0).
+        require_logprobs: If True, missing/empty tokens FAIL_LOUD.
+        high_risk: If True, failures set ``human_required`` (tool exec class).
+        action: Optional step/tool name for the reason string.
+        spans: Optional map of span_name → token logprobs for localization.
+    """
+    act = (action or "").strip() or None
+    brittle: list[str] = []
+
+    # Collect all sequences to evaluate: main sequence + named spans.
+    sequences: list[tuple[str | None, Sequence[float]]] = []
+    if logprobs is not None:
+        sequences.append((None, logprobs))
+    if spans:
+        for name, seq in spans.items():
+            sequences.append((str(name), seq))
+
+    if not sequences:
+        if require_logprobs or high_risk:
+            return _fail_loud(
+                "LOGPROB-GATE/AgentUQ: no logprobs provided "
+                f"(action={act!r} high_risk={high_risk}) — "
+                "cannot gate brittle tool steps without provider logprobs",
+                human_required=True,
+                action=act,
+                token_count=0,
+            )
+        return GateOutcome(
+            ok=True,
+            verdict="PASS",
+            reason=f"LOGPROB-GATE: logprobs not required action={act!r}",
+            exit_code=0,
+            human_required=False,
+            action=act,
+        )
+
+    # Empty any required sequence → FAIL_LOUD
+    for name, seq in sequences:
+        if seq is None or len(list(seq)) == 0:
+            label = name or "step"
+            if require_logprobs or high_risk:
+                return _fail_loud(
+                    f"LOGPROB-GATE/AgentUQ: empty logprobs for {label!r} "
+                    f"(action={act!r}) — missing confidence signal",
+                    human_required=True,
+                    action=act,
+                    token_count=0,
+                    brittle_spans=(name,) if name else (),
+                )
+
+    # Evaluate main sequence (or first span if only spans).
+    primary_name, primary_seq = sequences[0]
+    primary_vals = [float(x) for x in primary_seq]
+    summary = summarize_logprobs(primary_vals)
+
+    # Span checks (localize brittle tool args / SQL clauses).
+    for name, seq in sequences:
+        if name is None:
+            continue
+        vals = [float(x) for x in seq]
+        if not vals:
+            continue
+        s = summarize_logprobs(vals)
+        if s.mean_logprob < min_mean_logprob or s.min_logprob < min_token_logprob:
+            brittle.append(name)
+
+    fail_mean = summary.mean_logprob < min_mean_logprob
+    fail_min = summary.min_logprob < min_token_logprob
+
+    if fail_mean or fail_min or brittle:
+        parts: list[str] = []
+        if fail_mean:
+            parts.append(
+                f"mean_logprob={summary.mean_logprob:.4f} < {min_mean_logprob}"
+            )
+        if fail_min:
+            parts.append(
+                f"min_logprob={summary.min_logprob:.4f} < {min_token_logprob}"
+            )
+        if brittle:
+            parts.append(f"brittle_spans={brittle}")
+        reason = (
+            "LOGPROB-GATE/AgentUQ: brittle generation — "
+            + "; ".join(parts)
+            + f" action={act!r} tokens={summary.token_count}"
+            + (" — refuse high-risk tool exec" if high_risk else "")
+        )
+        return _fail(
+            reason,
+            confidence=summary.confidence,
+            human_required=bool(high_risk),
+            mean_logprob=summary.mean_logprob,
+            min_logprob=summary.min_logprob,
+            token_count=summary.token_count,
+            action=act,
+            brittle_spans=tuple(brittle),
+        )
+
+    span_note = f" spans_ok={list(spans.keys())}" if spans else ""
+    return GateOutcome(
+        ok=True,
+        verdict="PASS",
+        reason=(
+            f"LOGPROB-GATE ok mean={summary.mean_logprob:.4f} "
+            f"min={summary.min_logprob:.4f} conf={summary.confidence:.4f} "
+            f"tokens={summary.token_count} action={act!r}{span_note}"
+        ),
+        exit_code=0,
+        confidence=summary.confidence,
+        human_required=False,
+        mean_logprob=summary.mean_logprob,
+        min_logprob=summary.min_logprob,
+        token_count=summary.token_count,
+        action=act,
+        brittle_spans=(),
+    )
+
+
+def assert_logprob_ok(
+    logprobs: Sequence[float] | None,
+    **kwargs: Any,
+) -> GateOutcome:
+    """Raise :class:`ClosedLoopError` unless :func:`gate_logprob` is ok."""
+    outcome = gate_logprob(logprobs, **kwargs)
+    if not outcome.ok:
+        raise ClosedLoopError(f"{outcome.verdict}: {outcome.reason}")
+    return outcome
