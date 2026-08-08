@@ -85,10 +85,51 @@ not enough without the gate reader.
 DROP/rm inventory. Without the pre-exec call, this library cannot stop a
 brittle generation.
 
+---
+
+## Case AGENTWARD — post-deletion runtime enforcer (HN AgentWard)
+
+**Source:** Track B research (`20260808T161226Z`) —
+[AgentWard](https://github.com/agentward-ai/agentward) (Show HN: after an AI
+agent deleted files, a runtime enforcer). Related: production DB delete /
+Genesis self-delete threads; twin of groundcrew **DB-WIPE** (pre-action).
+
+**What fails:**
+
+1. Pre-action gates miss when destruction already happened mid-session.
+2. Agent continues high-risk tools after deletion with **no lockdown**.
+3. “Cleared” without inventory of lost paths or human clearance token.
+
+**Product in this repo:**
+
+| Control | API |
+|---------|-----|
+| Incident / session | `IncidentEvent`, `EnforcementSession` |
+| Open / inventory / clear | `open_incident`, `record_inventory`, `clear_incident` |
+| Risk classifier | `is_high_risk_action` / `DEFAULT_HIGH_RISK_ACTIONS` |
+| Gate | `gate_post_incident(...)` |
+| Raise form | `assert_post_incident_ok(...)` |
+
+**Rules (load-bearing):**
+
+- Incident signaled + no session (when required) → **FAIL_LOUD**
+- Lockdown + empty inventory → **FAIL_LOUD**
+- Lockdown + high-risk proposed action → **FAIL**
+- Cleared without inventory or clearance token → **FAIL_LOUD**
+- Cleared with inventory + token → **PASS**
+- Low-risk under lockdown → **PASS** (`human_required` to fully clear)
+
+**Tests:** `tests/test_agentward.py`
+
+**Non-Ornament:** After any destructive signal, open an `EnforcementSession`
+and call `gate_post_incident` before the next high-risk tool. Pair with
+`groundcrew.gate_destructive` (before) and `humanproof.gate_approval` (tokens).
+
 ## Related queue IDs
 
 - **POLICY-ARBITRATION** — this case (P2)
 - **LOGPROB-GATE** — AgentUQ class (this section)
+- **AGENTWARD** — post-incident lockdown (this section)
 - **NORM-ENFORCE** (normsync) — unattended action without norm
 - **APPROVAL-GATE** (humanproof) — owner token
 - **LEGAL-NO-AUTOFIX** (worldoracle) — human_required legal

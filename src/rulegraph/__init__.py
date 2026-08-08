@@ -4,6 +4,17 @@ from __future__ import annotations
 
 from importlib.metadata import version as _version
 
+from rulegraph.agentward import (
+    DEFAULT_HIGH_RISK_ACTIONS,
+    EnforcementSession,
+    IncidentEvent,
+    assert_post_incident_ok,
+    clear_incident,
+    gate_post_incident,
+    is_high_risk_action,
+    open_incident,
+    record_inventory,
+)
 from rulegraph.closed_loop import (
     DEFAULT_MIN_MEAN_LOGPROB,
     DEFAULT_MIN_TOKEN_LOGPROB,
@@ -39,9 +50,12 @@ __all__ = [
     "ArbitrationResult",
     "ClosedLoopError",
     "CoverageTracker",
+    "DEFAULT_HIGH_RISK_ACTIONS",
     "DEFAULT_MIN_MEAN_LOGPROB",
     "DEFAULT_MIN_TOKEN_LOGPROB",
+    "EnforcementSession",
     "GateOutcome",
+    "IncidentEvent",
     "LogprobSummary",
     "RuleArbiter",
     "RuleConflict",
@@ -53,6 +67,8 @@ __all__ = [
     "assert_arbitration_ok",
     "assert_logprob_ok",
     "assert_policy_ok",
+    "assert_post_incident_ok",
+    "clear_incident",
     "compile_farm_policy_graph",
     "detect_conflicts",
     "find_cycles",
@@ -60,9 +76,13 @@ __all__ = [
     "gate_logprob",
     "gate_policy_graph",
     "gate_policy_query",
+    "gate_post_incident",
     "import_from_file",
     "import_from_text",
     "infer_edges",
+    "is_high_risk_action",
     "list_critical_conflicts",
+    "open_incident",
+    "record_inventory",
     "summarize_logprobs",
 ]
