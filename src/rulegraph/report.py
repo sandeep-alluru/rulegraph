@@ -142,7 +142,7 @@ def to_markdown(results: list[ArbitrationResult]) -> str:
         tier = r.tier
         conf = f"{r.confidence:.0%}"
         query = _truncate(r.query.replace("|", "\\|"), 50)
-        contras = str(len(r.contradictions)) if r.contradictions else "—"
+        contras = str(len(r.contradictions)) if r.contradictions else "-"
         lines.append(f"| {tier} | {conf} | {query} | {contras} |")
 
     lines += [

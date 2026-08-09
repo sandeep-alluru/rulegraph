@@ -1,7 +1,7 @@
-"""LOGPROB-GATE / AgentUQ — token-logprob runtime reliability gate.
+"""LOGPROB-GATE / AgentUQ - token-logprob runtime reliability gate.
 
 Public case (Track B research 20260807T001222Z):
-  Show HN: AgentUQ — token-logprob runtime gate for LLM agents
+  Show HN: AgentUQ - token-logprob runtime gate for LLM agents
   https://github.com/antoinenguyen27/agentUQ
 
 Pre-fix hole: agents execute tool calls (SQL, shell, JSON args) from
@@ -59,9 +59,12 @@ def test_confident_tokens_pass() -> None:
     assert out.ok is True
     assert out.verdict == "PASS"
     assert out.token_count == 4
-    assert out.mean_logprob is not None and out.mean_logprob > -0.5
-    assert out.min_logprob is not None and out.min_logprob > -0.5
-    assert out.confidence is not None and out.confidence > 0.5
+    assert out.mean_logprob is not None
+    assert out.mean_logprob > -0.5
+    assert out.min_logprob is not None
+    assert out.min_logprob > -0.5
+    assert out.confidence is not None
+    assert out.confidence > 0.5
     payload = out.to_dict()
     assert payload["token_count"] == 4
     assert payload["brittle_spans"] == []

@@ -52,7 +52,7 @@ def section(title: str) -> None:
     print(f"\n{BOLD}{title}{RESET}")
 
 
-def run(name: str, fn):  # noqa: ANN001
+def run(name: str, fn):
     try:
         fn()
         ok(name)
@@ -73,7 +73,7 @@ def _test_import_version() -> None:
 
 
 def _test_import_public_api() -> None:
-    from rulegraph import ArbitrationResult, RuleArbiter, RuleEdge, RuleGraph, RuleNode, RuleStore
+    from rulegraph import RuleArbiter, RuleGraph, RuleStore
     assert callable(RuleGraph)
     assert callable(RuleArbiter)
     assert callable(RuleStore)
@@ -245,7 +245,9 @@ def _test_to_markdown_produces_table() -> None:
 
 def _test_print_result_to_console() -> None:
     import io
+
     from rich.console import Console
+
     from rulegraph.report import print_result
     from rulegraph.rule import ArbitrationResult
     buf = io.StringIO()
@@ -354,6 +356,7 @@ def _test_api_import() -> None:
 
 def _test_api_health() -> None:
     from fastapi.testclient import TestClient
+
     from rulegraph.api import app
     client = TestClient(app)
     r = client.get("/health")
@@ -364,6 +367,7 @@ def _test_api_health() -> None:
 
 def _test_api_rule_and_query() -> None:
     from fastapi.testclient import TestClient
+
     from rulegraph.api import app
     client = TestClient(app)
     with tempfile.TemporaryDirectory() as tmp:
@@ -456,7 +460,7 @@ run(".github/copilot-instructions.md exists", lambda: _check_file_nonempty(".git
 
 def _test_cursor_rules() -> None:
     mdc_files = list((REPO_ROOT / ".cursor/rules").glob("*.mdc"))
-    assert len(mdc_files) >= 1, f"Expected >=1 .mdc file in .cursor/rules/, found none"
+    assert len(mdc_files) >= 1, "Expected >=1 .mdc file in .cursor/rules/, found none"
 
 
 run(".cursor/rules/ has at least one .mdc file", _test_cursor_rules)

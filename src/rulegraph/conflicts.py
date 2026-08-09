@@ -1,4 +1,4 @@
-"""Rule conflict detection — find contradictions and cycles in a RuleGraph."""
+"""Rule conflict detection - find contradictions and cycles in a RuleGraph."""
 
 from __future__ import annotations
 
@@ -52,7 +52,7 @@ def detect_conflicts(graph: RuleGraph) -> list[RuleConflict]:
                     )
                 )
 
-    # 2. Direct contradictions — rules that both supersede each other
+    # 2. Direct contradictions - rules that both supersede each other
     edges = graph.get_edges()
     supersedes_map: dict[str, set[str]] = {}
     for edge in edges:
@@ -75,7 +75,7 @@ def detect_conflicts(graph: RuleGraph) -> list[RuleConflict]:
                     )
                 )
 
-    # 3. Overlapping scope — same tags + different node_type
+    # 3. Overlapping scope - same tags + different node_type
     nodes = graph.nodes()
     for i, a_node in enumerate(nodes):
         for b_node in nodes[i + 1 :]:

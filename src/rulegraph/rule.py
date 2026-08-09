@@ -1,4 +1,4 @@
-"""Rule data models — the content-addressed primitives of rulegraph."""
+"""Rule data models - the content-addressed primitives of rulegraph."""
 
 from __future__ import annotations
 
@@ -133,7 +133,7 @@ class ArbitrationResult:
     Attributes:
         query: The original question posed.
         answer: The synthesized answer.
-        tier: Classification — "determinate" | "indeterminate" | "unknown".
+        tier: Classification - "determinate" | "indeterminate" | "unknown".
         provenance: List of rule_ids that were used to produce the answer.
         confidence: Aggregate confidence in [0.0, 1.0].
         contradictions: rule_ids of rules that conflict with the answer.
@@ -569,7 +569,7 @@ class RuleArbiter:
             lines.append(f"Determinate ruling based on {len(relevant)} rule(s):")
         elif tier == "indeterminate":
             n = len(relevant)
-            lines.append(f"Indeterminate ruling — requires GM interpretation ({n} rule(s) found):")
+            lines.append(f"Indeterminate ruling - requires GM interpretation ({n} rule(s) found):")
         else:
             lines.append(f"Ruling ({len(relevant)} rule(s) found):")
 

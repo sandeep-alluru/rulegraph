@@ -1,4 +1,4 @@
-"""Coverage tracking — measure which rules are queried during arbitration."""
+"""Coverage tracking - measure which rules are queried during arbitration."""
 
 from __future__ import annotations
 

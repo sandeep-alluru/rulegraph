@@ -1,4 +1,4 @@
-"""AGENTWARD — post-incident runtime enforcement (HN AgentWard).
+"""AGENTWARD - post-incident runtime enforcement (HN AgentWard).
 
 After agent file/DB deletion, lockdown high-risk continue until inventory +
 human clearance. Twin of groundcrew pre-action gate_destructive.
@@ -72,7 +72,7 @@ def test_lockdown_blocks_high_risk() -> None:
 
 def test_lockdown_allows_low_risk() -> None:
     sess = open_incident(
-        IncidentEvent("i3", "file_delete", paths=["/tmp/x"]),
+        IncidentEvent("i3", "file_delete", paths=["deleted/file"]),
     )
     out = gate_post_incident(sess, proposed_action="read_file")
     assert out.ok is True

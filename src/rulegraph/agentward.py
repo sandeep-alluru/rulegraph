@@ -2,7 +2,7 @@
 
 Public case: After an AI agent deleted files/DB, operators need a **runtime
 enforcer** that locks further high-risk work until inventory + human clearance
-exist — not only a pre-action destructive classifier (groundcrew DB-WIPE).
+exist - not only a pre-action destructive classifier (groundcrew DB-WIPE).
 
 Twin of groundcrew ``gate_destructive`` (pre-action):
   AgentWard gates **post-incident lockdown** and subsequent agent actions.
@@ -14,8 +14,9 @@ Non-Ornament:
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Literal, Sequence
+from typing import Any, Literal
 
 from rulegraph.closed_loop import ClosedLoopError, GateOutcome
 
@@ -168,7 +169,7 @@ def clear_incident(
 ) -> EnforcementSession:
     """Attempt to clear lockdown with a human/owner token.
 
-    Does **not** clear if inventory is empty when required — status stays locked.
+    Does **not** clear if inventory is empty when required - status stays locked.
     """
     token = (clearance_token or "").strip()
     if not token:
@@ -197,10 +198,7 @@ def is_high_risk_action(
         banned |= {str(x).strip().lower().replace("-", "_") for x in extra}
     if a in banned:
         return True
-    for b in banned:
-        if a.startswith(b + "_") or a.endswith("_" + b) or b in a.split("."):
-            return True
-    return False
+    return any(a.startswith(b + "_") or a.endswith("_" + b) or b in a.split(".") for b in banned)
 
 
 def gate_post_incident(
@@ -242,7 +240,7 @@ def gate_post_incident(
                 verdict="FAIL_LOUD",
                 reason=(
                     "AGENTWARD: destructive incident signaled but no EnforcementSession "
-                    "— runtime enforcer missing after agent deletion (HN AgentWard class)"
+                    "- runtime enforcer missing after agent deletion (HN AgentWard class)"
                 ),
                 exit_code=2,
                 human_required=True,
@@ -298,7 +296,7 @@ def gate_post_incident(
                 ok=False,
                 verdict="FAIL_LOUD",
                 reason=(
-                    "AGENTWARD: status=cleared but inventory empty — clearance "
+                    "AGENTWARD: status=cleared but inventory empty - clearance "
                     "without loss inventory is not load-bearing"
                 ),
                 exit_code=2,
@@ -310,7 +308,7 @@ def gate_post_incident(
                 ok=False,
                 verdict="FAIL_LOUD",
                 reason=(
-                    "AGENTWARD: status=cleared but clearance_token missing — "
+                    "AGENTWARD: status=cleared but clearance_token missing - "
                     "human/owner token required to lift lockdown"
                 ),
                 exit_code=2,
@@ -336,7 +334,7 @@ def gate_post_incident(
             verdict="FAIL_LOUD",
             reason=(
                 f"AGENTWARD: lockdown active for incident={sess.incident.incident_id} "
-                f"kind={sess.incident.kind} but inventory is empty — record lost "
+                f"kind={sess.incident.kind} but inventory is empty - record lost "
                 "paths/resources before any further agent work"
             ),
             exit_code=2,
@@ -344,22 +342,25 @@ def gate_post_incident(
             action=proposed_action,
         )
 
-    if proposed_action and block_high_risk_while_locked:
-        if is_high_risk_action(proposed_action, extra=high_risk_extra):
-            sess.blocked_actions.append(proposed_action)
-            return GateOutcome(
-                ok=False,
-                verdict="FAIL",
-                reason=(
-                    f"AGENTWARD: lockdown blocks high-risk action={proposed_action!r} "
-                    f"after incident={sess.incident.incident_id} "
-                    f"(inventory={len(sess.inventory)}) — obtain human clearance "
-                    "via clear_incident before continuing (post-deletion enforcer)"
-                ),
-                exit_code=1,
-                human_required=True,
-                action=proposed_action,
-            )
+    if (
+        proposed_action
+        and block_high_risk_while_locked
+        and is_high_risk_action(proposed_action, extra=high_risk_extra)
+    ):
+        sess.blocked_actions.append(proposed_action)
+        return GateOutcome(
+            ok=False,
+            verdict="FAIL",
+            reason=(
+                f"AGENTWARD: lockdown blocks high-risk action={proposed_action!r} "
+                f"after incident={sess.incident.incident_id} "
+                f"(inventory={len(sess.inventory)}) - obtain human clearance "
+                "via clear_incident before continuing (post-deletion enforcer)"
+            ),
+            exit_code=1,
+            human_required=True,
+            action=proposed_action,
+        )
 
     # Locked but only observing / low-risk
     return GateOutcome(
@@ -368,7 +369,7 @@ def gate_post_incident(
         reason=(
             f"AGENTWARD: lockdown active incident={sess.incident.incident_id} "
             f"inventory={len(sess.inventory)}; proposed_action="
-            f"{proposed_action!r} allowed (not high-risk) — human_required to clear"
+            f"{proposed_action!r} allowed (not high-risk) - human_required to clear"
         ),
         exit_code=0,
         human_required=True,

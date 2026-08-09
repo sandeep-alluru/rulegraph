@@ -239,7 +239,7 @@ def conflicts_cmd(ctx: click.Context) -> None:
 @click.argument("queries", nargs=-1)
 @click.pass_context
 def coverage_cmd(ctx: click.Context, queries: tuple[str, ...]) -> None:
-    """Show rule coverage — which rules are queried vs dead.
+    """Show rule coverage - which rules are queried vs dead.
 
     Optionally pass queries to test coverage against.
 

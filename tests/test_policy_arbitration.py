@@ -1,7 +1,7 @@
-"""POLICY-ARBITRATION — farm COI/endorse pack + policy gates.
+"""POLICY-ARBITRATION - farm COI/endorse pack + policy gates.
 
 Farm: COI / endorse rules must compile and arbitrate before action.
-Public: AgentUQ / AgentWard / MAFIA — policy gates on tools.
+Public: AgentUQ / AgentWard / MAFIA - policy gates on tools.
 """
 
 from __future__ import annotations

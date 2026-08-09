@@ -13,19 +13,20 @@ What outcome changes?
 
 Farm case POLICY-ARBITRATION:
   COI / endorse rules must be *compiled* into the rule graph and arbitrated
-  before action — a rulebook that is never queried is ornament.
+  before action - a rulebook that is never queried is ornament.
 
 Public map:
-  * AgentUQ (HN) — token-logprob runtime gate for LLM agent steps
-  * AgentWard (HN) — post-deletion policy enforcement
-  * MAFIA (arXiv) — policy + HITL on audit/tools
+  * AgentUQ (HN) - token-logprob runtime gate for LLM agent steps
+  * AgentWard (HN) - post-deletion policy enforcement
+  * MAFIA (arXiv) - policy + HITL on audit/tools
 """
 
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from rulegraph.conflicts import RuleConflict, detect_conflicts
 from rulegraph.rule import (
@@ -154,7 +155,7 @@ def _fail(reason: str, **kwargs: Any) -> GateOutcome:
 def compile_farm_policy_graph() -> RuleGraph:
     """Compile Foundry/farm COI + endorse policy rules into a RuleGraph.
 
-    POLICY-ARBITRATION product artifact — not a README list. Rules:
+    POLICY-ARBITRATION product artifact - not a README list. Rules:
 
     * COI: no self-endorsement when financial interest exists
     * COI: disclose material interest before public statements
@@ -292,7 +293,7 @@ def gate_policy_graph(
     e = graph.edge_count()
     if n < min_rules:
         return _fail_loud(
-            f"empty policy graph — {n} rules (<{min_rules}); "
+            f"empty policy graph - {n} rules (<{min_rules}); "
             f"write-only rulebook is ornament (POLICY-ARBITRATION)",
             rule_count=n,
             edge_count=e,
@@ -304,7 +305,7 @@ def gate_policy_graph(
         kinds = sorted({c.conflict_type for c in critical})
         return _fail(
             f"POLICY-ARBITRATION: {len(critical)} critical conflict(s) "
-            f"types={kinds} — refuse allow/deny until resolved",
+            f"types={kinds} - refuse allow/deny until resolved",
             rule_count=n,
             edge_count=e,
             conflict_count=len(conflicts),
@@ -349,7 +350,7 @@ def gate_arbitration(
     if require_provenance and not prov:
         return _fail(
             f"POLICY-ARBITRATION: no provenance for query {result.query!r} "
-            f"(tier={tier}) — refuse determinate allow/deny without rule ids",
+            f"(tier={tier}) - refuse determinate allow/deny without rule ids",
             tier=tier,
             confidence=conf,
             provenance=prov,
@@ -357,8 +358,7 @@ def gate_arbitration(
 
     if require_determinate and tier != "determinate":
         return _fail(
-            f"POLICY-ARBITRATION: require_determinate but tier={tier!r} "
-            f"for query {result.query!r}",
+            f"POLICY-ARBITRATION: require_determinate but tier={tier!r} for query {result.query!r}",
             tier=tier,
             confidence=conf,
             provenance=prov,
@@ -470,7 +470,7 @@ def list_critical_conflicts(graph: RuleGraph) -> list[RuleConflict]:
 
 
 # ---------------------------------------------------------------------------
-# LOGPROB-GATE / AgentUQ — token-logprob runtime reliability gate
+# LOGPROB-GATE / AgentUQ - token-logprob runtime reliability gate
 # ---------------------------------------------------------------------------
 
 
@@ -484,7 +484,7 @@ def summarize_logprobs(logprobs: Sequence[float]) -> LogprobSummary:
         ValueError: if *logprobs* is empty.
     """
     if not logprobs:
-        raise ValueError("empty logprobs — cannot summarize")
+        raise ValueError("empty logprobs - cannot summarize")
     vals = [float(x) for x in logprobs]
     mean_lp = sum(vals) / len(vals)
     min_lp = min(vals)
@@ -510,7 +510,7 @@ def gate_logprob(
 ) -> GateOutcome:
     """Block brittle LLM steps using token logprobs (AgentUQ / LOGPROB-GATE).
 
-    Public case: AgentUQ (HN Show HN) — single-pass runtime reliability gate
+    Public case: AgentUQ (HN Show HN) - single-pass runtime reliability gate
     from provider logprobs. Does **not** claim truth; refuses execution when
     the generation looks ambiguous/brittle, especially on high-risk tools
     (SQL, shell, paths, tool JSON).
@@ -551,7 +551,7 @@ def gate_logprob(
         if require_logprobs or high_risk:
             return _fail_loud(
                 "LOGPROB-GATE/AgentUQ: no logprobs provided "
-                f"(action={act!r} high_risk={high_risk}) — "
+                f"(action={act!r} high_risk={high_risk}) - "
                 "cannot gate brittle tool steps without provider logprobs",
                 human_required=True,
                 action=act,
@@ -573,7 +573,7 @@ def gate_logprob(
             if require_logprobs or high_risk:
                 return _fail_loud(
                     f"LOGPROB-GATE/AgentUQ: empty logprobs for {label!r} "
-                    f"(action={act!r}) — missing confidence signal",
+                    f"(action={act!r}) - missing confidence signal",
                     human_required=True,
                     action=act,
                     token_count=0,
@@ -581,7 +581,7 @@ def gate_logprob(
                 )
 
     # Evaluate main sequence (or first span if only spans).
-    primary_name, primary_seq = sequences[0]
+    _primary_name, primary_seq = sequences[0]
     primary_vals = [float(x) for x in primary_seq]
     summary = summarize_logprobs(primary_vals)
 
@@ -602,20 +602,16 @@ def gate_logprob(
     if fail_mean or fail_min or brittle:
         parts: list[str] = []
         if fail_mean:
-            parts.append(
-                f"mean_logprob={summary.mean_logprob:.4f} < {min_mean_logprob}"
-            )
+            parts.append(f"mean_logprob={summary.mean_logprob:.4f} < {min_mean_logprob}")
         if fail_min:
-            parts.append(
-                f"min_logprob={summary.min_logprob:.4f} < {min_token_logprob}"
-            )
+            parts.append(f"min_logprob={summary.min_logprob:.4f} < {min_token_logprob}")
         if brittle:
             parts.append(f"brittle_spans={brittle}")
         reason = (
-            "LOGPROB-GATE/AgentUQ: brittle generation — "
+            "LOGPROB-GATE/AgentUQ: brittle generation - "
             + "; ".join(parts)
             + f" action={act!r} tokens={summary.token_count}"
-            + (" — refuse high-risk tool exec" if high_risk else "")
+            + (" - refuse high-risk tool exec" if high_risk else "")
         )
         return _fail(
             reason,

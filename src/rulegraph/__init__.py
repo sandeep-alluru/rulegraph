@@ -1,4 +1,4 @@
-"""rulegraph — Natural-language rulebook compiler for game arbitration."""
+"""rulegraph - Natural-language rulebook compiler for game arbitration."""
 
 from __future__ import annotations
 
@@ -47,12 +47,12 @@ from rulegraph.rule import (
 __version__ = _version("rulegraph")
 
 __all__ = [
-    "ArbitrationResult",
-    "ClosedLoopError",
-    "CoverageTracker",
     "DEFAULT_HIGH_RISK_ACTIONS",
     "DEFAULT_MIN_MEAN_LOGPROB",
     "DEFAULT_MIN_TOKEN_LOGPROB",
+    "ArbitrationResult",
+    "ClosedLoopError",
+    "CoverageTracker",
     "EnforcementSession",
     "GateOutcome",
     "IncidentEvent",

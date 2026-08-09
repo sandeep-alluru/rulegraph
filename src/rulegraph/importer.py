@@ -1,4 +1,4 @@
-"""Plain-text rule importer — parse bullet-point rule lists into RuleNodes."""
+"""Plain-text rule importer - parse bullet-point rule lists into RuleNodes."""
 
 from __future__ import annotations
 
