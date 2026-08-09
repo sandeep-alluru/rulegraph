@@ -536,7 +536,7 @@ def gate_logprob(
         action: Optional step/tool name for the reason string.
         spans: Optional map of span_name → token logprobs for localization.
     """
-    act = (action or "").strip() or None
+    act = (action or "").strip()
     brittle: list[str] = []
 
     # Collect all sequences to evaluate: main sequence + named spans.
@@ -544,8 +544,8 @@ def gate_logprob(
     if logprobs is not None:
         sequences.append((None, logprobs))
     if spans:
-        for name, seq in spans.items():
-            sequences.append((str(name), seq))
+        for span_key, seq in spans.items():
+            sequences.append((str(span_key), seq))
 
     if not sequences:
         if require_logprobs or high_risk:
@@ -567,9 +567,9 @@ def gate_logprob(
         )
 
     # Empty any required sequence → FAIL_LOUD
-    for name, seq in sequences:
+    for seq_name, seq in sequences:
         if seq is None or len(list(seq)) == 0:
-            label = name or "step"
+            label = seq_name or "step"
             if require_logprobs or high_risk:
                 return _fail_loud(
                     f"LOGPROB-GATE/AgentUQ: empty logprobs for {label!r} "
@@ -577,7 +577,7 @@ def gate_logprob(
                     human_required=True,
                     action=act,
                     token_count=0,
-                    brittle_spans=(name,) if name else (),
+                    brittle_spans=(seq_name,) if seq_name else (),
                 )
 
     # Evaluate main sequence (or first span if only spans).
@@ -586,15 +586,15 @@ def gate_logprob(
     summary = summarize_logprobs(primary_vals)
 
     # Span checks (localize brittle tool args / SQL clauses).
-    for name, seq in sequences:
-        if name is None:
+    for seq_name, seq in sequences:
+        if seq_name is None:
             continue
         vals = [float(x) for x in seq]
         if not vals:
             continue
         s = summarize_logprobs(vals)
         if s.mean_logprob < min_mean_logprob or s.min_logprob < min_token_logprob:
-            brittle.append(name)
+            brittle.append(seq_name)
 
     fail_mean = summary.mean_logprob < min_mean_logprob
     fail_min = summary.min_logprob < min_token_logprob

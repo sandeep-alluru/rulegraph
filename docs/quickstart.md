@@ -194,7 +194,7 @@ after a game session to audit which rules in your graph are actually being reach
 
 A complete example using D&D 5e combat rules with 12 `RuleNode`s, 10 `RuleEdge`s, three
 combat scenarios, and a session summary is available at
-[examples/dnd_game_master.py](../examples/dnd_game_master.py).
+[examples/dnd_game_master.py](https://github.com/sandeep-alluru/rulegraph/blob/main/examples/dnd_game_master.py).
 
 ```bash
 python examples/dnd_game_master.py
@@ -202,7 +202,7 @@ python examples/dnd_game_master.py
 
 A corporate policy compliance example (12 policies, 4 proposed actions, APPROVED / BLOCKED /
 PENDING verdicts) is at
-[examples/policy_compliance_agent.py](../examples/policy_compliance_agent.py).
+[examples/policy_compliance_agent.py](https://github.com/sandeep-alluru/rulegraph/blob/main/examples/policy_compliance_agent.py).
 
 ```bash
 python examples/policy_compliance_agent.py
