@@ -10,6 +10,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from rulegraph.paths import ensure_parent_dir, safe_db_path
+
 
 def _sha16(text: str) -> str:
     """Return the first 16 hex chars of SHA-256(text)."""
@@ -304,9 +306,10 @@ class RuleStore:
         import time
 
         self._time = time
-        self.path = Path(path)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(str(self.path))
+        confined = safe_db_path(path, env_var="RULEGRAPH_DATA_DIR", default_name="rules.db")
+        ensure_parent_dir(confined)
+        self.path = Path(confined)
+        self._conn = sqlite3.connect(confined)
         self._conn.row_factory = sqlite3.Row
         self._conn.executescript(self._SCHEMA)
         self._conn.commit()
