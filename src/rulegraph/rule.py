@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from rulegraph.paths import ensure_parent_dir, safe_db_path
+from rulegraph.paths import connect_sqlite, ensure_parent_dir, resolve_store_path
 
 
 def _sha16(text: str) -> str:
@@ -306,10 +306,10 @@ class RuleStore:
         import time
 
         self._time = time
-        confined = safe_db_path(path, env_var="RULEGRAPH_DATA_DIR", default_name="rules.db")
-        ensure_parent_dir(confined)
-        self.path = Path(confined)
-        self._conn = sqlite3.connect(confined)
+        full, base = resolve_store_path(path, env_var="RULEGRAPH_DATA_DIR", default_name="rules.db")
+        ensure_parent_dir(full, base)
+        self.path = Path(full)
+        self._conn = connect_sqlite(full, base)
         self._conn.row_factory = sqlite3.Row
         self._conn.executescript(self._SCHEMA)
         self._conn.commit()
