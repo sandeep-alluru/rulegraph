@@ -46,7 +46,9 @@ def run_server() -> None:
         return [
             _mcp_types.Tool(
                 name="add_rule",
-                description="Add a rule node to the rulegraph rule graph.",
+                description=(
+                    "Add an arbitration rule to the rule graph for resolving conflicting tool suggestions. Use when encoding precedence (e.g. security tool beats convenience tool). Call arbitrate to apply rules; query_rules to inspect."
+                ),
                 inputSchema={
                     "type": "object",
                     "properties": {
@@ -70,7 +72,9 @@ def run_server() -> None:
             ),
             _mcp_types.Tool(
                 name="query_rules",
-                description="Arbitrate a natural-language question against the rule graph.",
+                description=(
+                    "List or filter rules currently in the arbitration graph. Use to understand why arbitrate would pick a winner. Read-only."
+                ),
                 inputSchema={
                     "type": "object",
                     "properties": {
@@ -82,7 +86,9 @@ def run_server() -> None:
             ),
             _mcp_types.Tool(
                 name="arbitrate",
-                description="Return a structured ArbitrationResult for a game-rules question.",
+                description=(
+                    "Resolve conflicting AI tool suggestions using the rule graph. Use when multiple tools propose incompatible actions and you need a single winner with rationale. Requires rules via add_rule first."
+                ),
                 inputSchema={
                     "type": "object",
                     "properties": {
